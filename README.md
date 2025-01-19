@@ -1,7 +1,9 @@
 # PSisolation
 
 ## Overview
-PS-Isolation is a specialized tool designed to prevent EDR (Endpoint Detection and Response) and monitoring processes from communicating with their consoles. By leveraging Windows Defender Firewall rules and PowerShell automation, this script dynamically identifies and blocks network traffic for specific monitoring agents and processes.
+PS-Isolation is a specialized tool designed to prevent EDR (Endpoint Detection and Response) and monitoring processes from communicating with their consoles. By leveraging Windows Defender Firewall rules and PowerShell automation, this script dynamically identifies and blocks network traffic for specific monitoring agents and processes. 
+
+I also wrote this [article]() if you want to learn a bit more about it
 
 ## Key Features
 - Automated Detection: Identifies EDR and monitoring tools running on the system based on predefined and customizable keywords.
