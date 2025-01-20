@@ -39,7 +39,7 @@ https://github.com/user-attachments/assets/a8b62fc7-5132-477b-9489-c569c41bcc78
 - or a specific process you want with : 
 
 ````
-Block-SpecificProcessTraffic
+Block-SpecificProcessTraffic -ProcessPath <executablefull path>
 ````
 
 - When you're done, run this to remove all rules created by the tool :
