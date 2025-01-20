@@ -23,10 +23,10 @@ I also wrote this [article](https://blog.y00ga.lol/PERSO/PUBLISH/Article+perso/P
 
 ## Getting Started
 
-- Import the script in memory from a remote HTTP server 
+- Import the script in memory
 
 ````
-IEX(New-Object Net.WebClient).downloadString('http://xxx.xxx.xxx/PSisolation.ps1')
+IEX(New-Object Net.WebClient).downloadString('https://raw.githubusercontent.com/y00ga-sec/PSisolation/refs/heads/main/PSisolation.ps1')
 ````
 
 - Block outgoing traffic by running directly
