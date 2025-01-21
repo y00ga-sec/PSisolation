@@ -51,7 +51,7 @@ Unblock-AllFilters
 https://github.com/user-attachments/assets/a647de1e-9314-4d73-886c-ba8f4cbb7356
 
 ------
-# But what if the target machine does not use Windows Defende Firewall ?
+# But what if the target machine does not use Windows Defender Firewall ?
 
 Well the script got you covered ! Logic is the following :
 
