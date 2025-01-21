@@ -63,8 +63,3 @@ Well the script got you covered ! Logic is the following :
    - Once you're done and run `Unblock-AllFilters`, the script will restore every rule/rule state from the temporary backup file (which will also delete PSisolation blocking rules)
    - Delete backup rules temporary
    - Restore Windows Defender Firewall to its previous state 
-
-
----------
-# TO DO : 
-- Right now, this tool only works if the Windows Firewall is enabled, which is not always the case, so PSisolation needs to circumvent this limitation so that the Windows Firewall rules blocking rules get applied for EDR only.
