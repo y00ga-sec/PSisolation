@@ -61,5 +61,5 @@ Well the script got you covered ! Logic is the following :
    - Create outgoing blocking firewall rules for EDRs
    - Enable Windows Defender Firewall so that the PSisolation blocking rules take effect and disable every rule to avoid blocking production traffic
    - Once you're done and run `Unblock-AllFilters`, the script will restore every rule/rule state from the temporary backup file (which will also delete PSisolation blocking rules)
-   - Delete backup rules temporary
+   - Delete rules backup temporary file
    - Restore Windows Defender Firewall to its previous state 
