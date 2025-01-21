@@ -1,13 +1,16 @@
+# Global variable to track whether the script enabled the firewall or not
+$global:ScriptEnabledFirewall = $false
+# Path for the firewall rules backup file
+$FirewallBackupFile = "$env:Temp\FirewallRulesBackup.wfw"
+
 function Show-Banner {
     $banner = @"
-
 ██████╗ ███████╗██╗███████╗ ██████╗ ██╗      █████╗ ████████╗██╗ ██████╗ ███╗   ██╗
 ██╔══██╗██╔════╝██║██╔════╝██╔═══██╗██║     ██╔══██╗╚══██╔══╝██║██╔═══██╗████╗  ██║
 ██████╔╝███████╗██║███████╗██║   ██║██║     ███████║   ██║   ██║██║   ██║██╔██╗ ██║
 ██╔═══╝ ╚════██║██║╚════██║██║   ██║██║     ██╔══██║   ██║   ██║██║   ██║██║╚██╗██║
 ██║     ███████║██║███████║╚██████╔╝███████╗██║  ██║   ██║   ██║╚██████╔╝██║ ╚████║
 ╚═╝     ╚══════╝╚═╝╚══════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
-
 "@
     Write-Host $banner
 }
@@ -21,27 +24,60 @@ $MonitoringProc = @(
 # Name of the custom filter for identifying everything created by the script
 $CustomFilterName = "Custom Outbound Rule"
 
-# Function: Retrieve executable paths of services whose DisplayName contains any keyword
+# Check if Windows Firewall is enabled
+function Check-FirewallStatus {
+    $FirewallProfiles = Get-NetFirewallProfile
+    $FirewallEnabled = $FirewallProfiles | Where-Object { $_.Enabled -eq $true }
+
+    if ($FirewallEnabled) {
+        return $true
+    } else {
+        return $false
+    }
+}
+
+# Export all firewall rules to a backup file
+function Export-FirewallRules {
+    param (
+        [string]$ExportFile
+    )
+    Write-Output "[*] Exporting current firewall rules to $ExportFile..."
+    netsh advfirewall export $ExportFile | Out-Null
+}
+
+# Restore firewall rules from a backup file
+function Restore-FirewallRules {
+    param (
+        [string]$ExportFile
+    )
+    if (Test-Path $ExportFile) {
+        Write-Output "[*] Restoring firewall rules from $ExportFile..."
+        netsh advfirewall import $ExportFile | Out-Null
+        Remove-Item -Path $ExportFile -ErrorAction SilentlyContinue
+        Write-Output "[*] Firewall rules restored successfully."
+    } else {
+        Write-Warning "Backup file not found. Unable to restore firewall rules."
+    }
+}
+
+# Retrieve executable paths of services whose DisplayName contains any of the keyword
 function Get-MatchedServicePaths {
     param (
         [string[]]$Keywords
     )
 
     $MatchedServices = @{}
-    
-    # Retrieve all services on the host
-    $Services = Get-Service -ErrorAction SilentlyContinue | ForEach-Object {
+    $Services = Get-Service -ErrorAction SilentlyContinue
+
+    foreach ($Service in $Services) {
         try {
-            $DisplayName = $_.DisplayName
-            $ServiceName = $_.Name
-            
-            # Check if the DisplayName contains any of the keywords
+            $DisplayName = $Service.DisplayName
+            $ServiceName = $Service.Name
+
             if ($Keywords | Where-Object { $DisplayName -like "*$_*" }) {
-                # Use WMI to retrieve the executable path of the service
-                $Service = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'"
-                if ($Service -and $Service.PathName) {
-                    # Extract the executable path, removing any quotes or arguments
-                    $ExecutablePath = $Service.PathName.Split('"')[1]
+                $WMIService = Get-WmiObject Win32_Service -Filter "Name='$ServiceName'"
+                if ($WMIService -and $WMIService.PathName) {
+                    $ExecutablePath = $WMIService.PathName.Split('"')[1]
                     if ($ExecutablePath) {
                         $MatchedServices[$ServiceName] = @{
                             DisplayName = $DisplayName
@@ -51,19 +87,31 @@ function Get-MatchedServicePaths {
                 }
             }
         } catch {
-            Write-Warning "Failed to retrieve service details for: $_.Name. Error: $_"
+            Write-Warning "Failed to retrieve service details for: $($Service.Name). Error: $_"
         }
     }
 
     return $MatchedServices
 }
 
-# Function: Create firewall rules for identified processes
+# Create firewall rules for identified processes
 function Block-MonitoringProc {
     Show-Banner
     Write-Output "Checking for monitoring services..."
 
-    # Get all matched services with their executable paths
+    $FirewallEnabled = Check-FirewallStatus
+    if (-not $FirewallEnabled) {
+        Write-Warning "Windows Firewall is disabled. Enabling it and exporting existing rules..."
+        Export-FirewallRules -ExportFile $FirewallBackupFile
+
+        Write-Output "[*] Disabling all current firewall rules..."
+        Disable-NetFirewallRule -All
+
+        Write-Output "[*] Enabling Windows Firewall..."
+        Set-NetFirewallProfile -All -Enabled True
+        $global:ScriptEnabledFirewall = $true # Make sure the global variable is updated
+    }
+
     $MatchedServices = Get-MatchedServicePaths -Keywords $MonitoringProc
 
     if ($MatchedServices.Count -eq 0) {
@@ -76,21 +124,17 @@ function Block-MonitoringProc {
         $ProcessPath = $ServiceDetails.Path
         $DisplayName = $ServiceDetails.DisplayName
 
-        # Validate the executable path
         if (-not (Test-Path $ProcessPath)) {
             Write-Warning "Invalid executable path for service: $ServiceName ($ProcessPath). Skipping..."
             continue
         }
 
-        # Validate DisplayName length to avoid firewall rule name length limit
         $FirewallDisplayName = "${CustomFilterName}: $DisplayName"
         if ($FirewallDisplayName.Length -gt 255) {
             $FirewallDisplayName = $FirewallDisplayName.Substring(0, 255)
         }
 
         Write-Output "Blocking outbound traffic for service: $DisplayName ($ProcessPath)"
-
-        # Create a new firewall rule to block outbound traffic for this process
         try {
             New-NetFirewallRule -DisplayName $FirewallDisplayName `
                 -Direction Outbound `
@@ -106,53 +150,22 @@ function Block-MonitoringProc {
     }
 }
 
-# Function: Block a specific process's traffic based on full path
-function Block-SpecificProcessTraffic {
-param (
-    [string]$ProcessPath
-)
-    Show-Banner
-    # Validate the process path
-    if (-not (Test-Path $ProcessPath)) {
-        Write-Error "The specified process path does not exist: $ProcessPath"
-        return
-    }
-
-    # Extract the process name from the path
-    $ProcessName = [System.IO.Path]::GetFileName($ProcessPath)
-
-    Write-Output "Blocking outbound traffic for process: $ProcessName"
-    Write-Output "Executable Path: $ProcessPath"
-    try {
-        # Validate DisplayName length
-        $FirewallDisplayName = "${CustomFilterName}: $ProcessName"
-        if ($FirewallDisplayName.Length -gt 255) {
-            $FirewallDisplayName = $FirewallDisplayName.Substring(0, 255)
-        }
-
-        # Create a new firewall rule
-        New-NetFirewallRule -DisplayName $FirewallDisplayName `
-            -Direction Outbound `
-            -Action Block `
-            -Program $ProcessPath `
-            -Protocol Any `
-            -Profile Any `
-            -Description "Blocks outbound traffic for user-specified process $ProcessName"
-        Write-Output "Successfully blocked traffic for process: $ProcessName."
-    } catch {
-        Write-Warning "Failed to block traffic for process: $ProcessName. $_"
-    }
-}
-
-
-# Function: Remove all custom firewall rules created by the script
+# Remove all custom firewall rules and restore the previous state
 function Unblock-AllFilters {
     Show-Banner
     Write-Output "Removing all custom firewall rules..."
 
-    # Find all firewall rules created by the script
-    $Rules = Get-NetFirewallRule | Where-Object { $_.DisplayName -like "$CustomFilterName*" }
+    if ($global:ScriptEnabledFirewall) {
+        Write-Warning "The script enabled the firewall. Restoring previous state..."
+        Restore-FirewallRules -ExportFile $FirewallBackupFile
 
+        Write-Output "[*] Disabling Windows Firewall..."
+        Set-NetFirewallProfile -All -Enabled False
+        $global:ScriptEnabledFirewall = $false # Reset the global variable
+        return
+    }
+
+    $Rules = Get-NetFirewallRule | Where-Object { $_.DisplayName -like "$CustomFilterName*" }
     if ($Rules.Count -eq 0) {
         Write-Output "[-] No custom firewall rules found."
         return
