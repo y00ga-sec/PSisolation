@@ -51,3 +51,7 @@ Unblock-AllFilters
 
 https://github.com/user-attachments/assets/a647de1e-9314-4d73-886c-ba8f4cbb7356
 
+
+---------
+# TO DO : 
+- Right now, this tool only works if the Windows Firewall is enabled, which is not always the case, so PSisolation needs to circumvent this limitation so that the Windows Firewall rules blocking rules get applied for EDR only.
