@@ -55,7 +55,7 @@ https://github.com/user-attachments/assets/a647de1e-9314-4d73-886c-ba8f4cbb7356
 
 Well the script got you covered ! Logic is the following :
 
-- If PSisolation detects the victim machine has Windows Firewall enabled --> Simple retrieves EDR services name and associated executable path and create outgoing blocking firewall rules
+- If PSisolation detects the victim machine has Windows Firewall enabled --> Simply retrieves EDR services name and associated executable path and create outgoing blocking firewall rules
 - Otherwise, PSisolation will :
    - Backup every rule on the machine in a temporary file
    - Create outgoing blocking firewall rules for EDRs
