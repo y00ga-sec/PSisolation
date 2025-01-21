@@ -48,8 +48,21 @@ Block-SpecificProcessTraffic -ProcessPath <executablefull path>
 Unblock-AllFilters
 ````
 
-
 https://github.com/user-attachments/assets/a647de1e-9314-4d73-886c-ba8f4cbb7356
+
+------
+# But what if the target machine does not use Windows Defende Firewall ?
+
+Well the script got you covered ! Logic is the following :
+
+- If PSisolation detects the victim machine has Windows Firewall enabled --> Simple retrieves EDR services name and associated executable path and create outgoing blocking firewall rules
+- Otherwise, PSisolation will :
+   - Backup every rule on the machine in a temporary file
+   - Create outgoing blocking firewall rules for EDRs
+   - Enable Windows Defender Firewall so that the PSisolation blocking rules take effect and disable every rule to avoid blocking production traffic
+   - Once you're done and run `Unblock-AllFilters`, the script will restore every rule/rule state from the temporary backup file (which will also delete PSisolation blocking rules)
+   - Delete backup rules temporary
+   - Restore Windows Defender Firewall to its previous state 
 
 
 ---------
