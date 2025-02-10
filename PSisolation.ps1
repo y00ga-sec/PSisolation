@@ -17,7 +17,7 @@ function Show-Banner {
 
 # Define the list of keywords to detect in service DisplayNames
 $MonitoringProc = @(
-    "EDR", "F-Secure", "withsecure", "Defender", "Elastic", "Trellix", "Qualys", "Sentinel", "Crowdstrike", "csagent", "Cylance",
+    "EDR", "F-Secure", "withsecure", "Defender", "Elastic", "Trellix", "Qualys", "Sentinel", "LogProcessorService", "AmSvc", "CrAmTray", "ExecutionPreventionSvc", "Crowdstrike", "csagent", "Cylance",
     "Cybereason", "Carbon Black", "CB Defense", "Tanium", "Cortex", "ESET", "Harfang", "Trend", "WinCollect"
 )
 
